@@ -8,7 +8,7 @@ import matplotlib as mpl
 import io
 
 
-st.title("Formula Capture📸")
+st.title("수식 변환기📸")
 
 # 모델 초기화
 model = Pix2TexModel()
@@ -44,16 +44,28 @@ def latex_to_image(latex_str):
     
     plt.close(fig)
     return buf
+
+def clear_state():
+    if "predict_latex" in st.session_state:
+        del st.session_state.predict_latex
+        
+def on_text_change(text):
+    st.session_state.predict_latex = text
+
+
+## 파일 업로드 작업 ##
 # 사용자로부터 이미지 입력
-uploaded_file = st.file_uploader("", type=["png", "jpg"])
-## 파일 업로드 이후 작업 ##
-if uploaded_file is not None:
+uploaded_file = st.file_uploader("", type=["png", "jpg"], on_change=clear_state)
+
+if uploaded_file is not None:        
     img = Image.open(uploaded_file) # 이미지 열기
     
     # 이미지 크롭
     cropped_img = st_cropper(img_file=img, realtime_update=True, box_color="green")
     
     col1, col2 = st.columns([10, 1])
+    
+    # 전체 이미지 사용 토글
     use_full = st.toggle("전체 이미지 사용")
     
     if use_full:
@@ -65,46 +77,55 @@ if uploaded_file is not None:
         col1.image(cropped_img, caption='최종 입력 이미지', use_column_width=True)
         final_img = cropped_img
         
-    # 전체 이미지 사용 토글
     
     
     ## 예측 부분 ##
-    st.title("Predict")
-    if st.button("Start", key="Start_btn"):
+    if st.button("수식 변환", key="Start_btn"):
+        if "predict_latex" in st.session_state:
+            del st.session_state.predict_latex
+            print(st.session_state)
+            print("초기화 완료")
         with st.spinner("분석중....."):
             if use_full:
                 prediction = model.predict(final_img, True)
             else:
                 prediction = model.predict(final_img)
-            st.latex(prediction)
-            st.code(prediction, language="cmd")
+                
             st.session_state.predict_latex = prediction
-    else:
-        # 'Start' 버튼을 누르지 않았을 때도 prediction 값을 유지
-        if "predict_latex" in st.session_state:
-            prediction = st.session_state.predict_latex
+            print("시작 : ",st.session_state)
+            # data = st.text_input("수식 수정:",st.session_state.predict_latex)
 
-        if "predict_latex" in st.session_state:
+    # 수식이 세션에 저장되어있다면 표시
+    print(st.session_state)
+    print(len(st.session_state))
+    if "predict_latex" in st.session_state:
+        if st.session_state.Start_btn == True:
+            print("True")
+            st.text_input("수식 수정:",st.session_state.predict_latex, key="text")
+            print(st.session_state)
             st.latex(st.session_state.predict_latex)
             st.code(st.session_state.predict_latex, language="cmd")
-
-            # 사용자에게 수정된 LaTeX 문자열 입력을 받습니다.
-            edited_prediction = st.text_input("수식 수정:", st.session_state.predict_latex)
-
-            # 입력된 값이 변경되면 session_state를 업데이트합니다.
-            if edited_prediction != st.session_state.predict_latex:
-                st.session_state.predict_latex = edited_prediction
-            ## 내보내기 기능 ##
-            with st.expander("내보내기"):
-                
-                # 울프람알파 내보내기
-                encoded_prediction = quote(prediction) # URL 또는 다른 web에 보내기위한 인코딩
-                wolfram_url = f"https://www.wolframalpha.com/input/?i={encoded_prediction}"
-                button_code = f"""
-                <a href="{wolfram_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">울프람알파로 이동</a>
-                """
-                st.markdown(button_code, unsafe_allow_html=True)
+            
+        else:
+            if len(st.session_state) == 3:
+                data = st.text_input("수식 수정:",st.session_state.text)
+            elif len(st.session_state) == 2:
+                print("False")
+                data = st.text_input("수식 수정:",st.session_state.predict_latex)
+            st.latex(data)
+            st.code(data, language="cmd")
         
+        
+        
+        with st.expander("내보내기"):
+            # 울프람알파 내보내기
+            encoded_prediction = quote(st.session_state.predict_latex) # URL 또는 다른 web에 보내기위한 인코딩
+            wolfram_url = f"https://www.wolframalpha.com/input/?i={encoded_prediction}"
+            button_code = f"""
+            <a href="{wolfram_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">WolframAlpha</a>
+            """
+            st.markdown(button_code, unsafe_allow_html=True)
+            
             # # 이미지 저장
             # latex_image = latex_to_image(prediction)
             # latex_image_bytes = latex_image.getvalue()
@@ -126,3 +147,6 @@ if uploaded_file is not None:
      
 # References
 # - streamlit-cropper https://github.com/turner-anderson/streamlit-cropper
+
+# 수정해야할 사항
+# - 한번 수식변환 누르고 두번 움직이면 다시 초기화됨 이유를 파악해서 고치면 됨

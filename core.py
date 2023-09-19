@@ -9,7 +9,7 @@ from transformers import PreTrainedTokenizerFast
 import numpy as np
 
 class Pix2TexModel:
-    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca_e99_b868_t576_ed107.pth', temperature=.333):
+    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca2_e118_b864_t661_ed128.pth', temperature=.333):
         with open(config_path, 'r', encoding='utf-8') as f:
             params = yaml.load(f, Loader=yaml.FullLoader)
         self.args = parse_args(Munch(params))
