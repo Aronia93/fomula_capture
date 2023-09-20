@@ -48,9 +48,6 @@ def latex_to_image(latex_str):
 def clear_state():
     if "predict_latex" in st.session_state:
         del st.session_state.predict_latex
-        
-def on_text_change(text):
-    st.session_state.predict_latex = text
 
 
 ## 파일 업로드 작업 ##
@@ -92,29 +89,20 @@ if uploaded_file is not None:
                 prediction = model.predict(final_img)
                 
             st.session_state.predict_latex = prediction
-            print("시작 : ",st.session_state)
             # data = st.text_input("수식 수정:",st.session_state.predict_latex)
 
     # 수식이 세션에 저장되어있다면 표시
-    print(st.session_state)
-    print(len(st.session_state))
     if "predict_latex" in st.session_state:
+            
         if st.session_state.Start_btn == True:
-            print("True")
-            st.text_input("수식 수정:",st.session_state.predict_latex, key="text")
-            print(st.session_state)
+            data = st.text_input("수식수정 : ",placeholder=st.session_state.predict_latex, label_visibility="hidden")
             st.latex(st.session_state.predict_latex)
             st.code(st.session_state.predict_latex, language="cmd")
             
         else:
-            if len(st.session_state) == 3:
-                data = st.text_input("수식 수정:",st.session_state.text)
-            elif len(st.session_state) == 2:
-                print("False")
-                data = st.text_input("수식 수정:",st.session_state.predict_latex)
+            data = st.text_input("수정:",st.session_state.predict_latex)
             st.latex(data)
             st.code(data, language="cmd")
-        
         
         
         with st.expander("내보내기"):
