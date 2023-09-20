@@ -50,6 +50,6 @@ encoder_structure: hybrid
 temperature: 0.2
 test_samples: 5
 testbatchsize: 20
-tokenizer: ./tokenizer.json
+tokenizer: ./pca4_tokenizer.json
 valbatches: 100
 valdata: dataset/data/val_pre_crohme_pdf_aihub_final.pkl

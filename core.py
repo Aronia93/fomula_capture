@@ -8,20 +8,35 @@ from pix2tex.dataset.transforms import test_transform
 from transformers import PreTrainedTokenizerFast
 import numpy as np
 
+
 class Pix2TexModel:
-    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca2_e118_b864_t661_ed128.pth', temperature=.333):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            params = yaml.load(f, Loader=yaml.FullLoader)
-        self.args = parse_args(Munch(params))
-        self.args.temperature = temperature
-        self.args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.args.wandb = False
+    _instance = None
+    _is_init = False
 
-        self.model = get_model(self.args)
-        self.model.load_state_dict(torch.load(checkpoint_path, self.args.device))
-        self.model.eval()
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(Pix2TexModel, cls).__new__(cls)
+            # 초기화 코드 추가 가능
+            print('newCall')
+        return cls._instance
 
-        self.tokenizer = PreTrainedTokenizerFast(tokenizer_file=self.args.tokenizer)
+    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca4_e45_b855_t_685_ed131.pth',
+                 temperature=.333):
+
+        if not self._is_init:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                params = yaml.load(f, Loader=yaml.FullLoader)
+            self.args = parse_args(Munch(params))
+            self.args.temperature = temperature
+            self.args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            self.args.wandb = False
+
+            self._is_init = True
+            self.model = get_model(self.args)
+            self.model.load_state_dict(torch.load(checkpoint_path, self.args.device))
+            self.model.eval()
+
+            self.tokenizer = PreTrainedTokenizerFast(tokenizer_file=self.args.tokenizer)
 
     def predict(self, uploaded_file_content, is_full_image=False):
         # 1. 파일 스트림에서 numpy 배열로 이미지를 읽습니다.
@@ -33,7 +48,7 @@ class Pix2TexModel:
             img = preprocessing(img)
             dec = self.model.generate(img2tensor(img).to(self.args.device), temperature=self.args.temperature)
             pred = post_process(token2str(dec, self.tokenizer)[0])
-            return pred         
+            return pred
         img = np.array(uploaded_file_content)
         img = preprocessing(img)
         dec = self.model.generate(img2tensor(img).to(self.args.device), temperature=self.args.temperature)
@@ -52,14 +67,15 @@ def detokenize(tokens, tokenizer):
                 del toks[b][i]
     return toks
 
+
 def preprocessing(_img):
     max_h = 192
     max_w = 672
     if _img.ndim == 2:
         h, w = _img.shape
-    else:  
+    else:
         h, w, _ = _img.shape
-        
+
     if w > max_w:
         ratio = max_w / w
         new_h = int(h * ratio)
@@ -69,7 +85,6 @@ def preprocessing(_img):
         ratio = max_h / h
         new_w = int(w * ratio)
         h, w = max_h, new_w
-
 
     h_remain = h % 32
     if h_remain < 16:
@@ -87,13 +102,14 @@ def preprocessing(_img):
     if new_h < 32:
         new_h = 32
     img = cv2.resize(_img, (new_w, new_h))
-    
+
     if img.ndim == 3 and img.shape[2] == 3:
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     else:
         gray_img = img
 
     return gray_img
+
 
 def img2tensor(_img):
     return test_transform(image=cv2.cvtColor(_img, cv2.COLOR_BGR2RGB))['image'][:1].unsqueeze(0)
@@ -124,7 +140,6 @@ def post_process(s: str):
     return s
 
 
-
 @torch.no_grad()
 def prediction(model, img, args):
     """evaluates the model. Returns bleu score on the dataset
@@ -141,6 +156,5 @@ def prediction(model, img, args):
     dec = model.generate(img2tensor(img).to(args.device), temperature=args.temperature)
     # pred = detokenize(dec, tokenizer) # 토큰 list 형식 으로 출력
     # pred = token2str(dec, tokenizer)[0] # 입력 형식 대로 출력(토큰 사이 띄어쓰기 존재)
-    pred = post_process(token2str(dec, tokenizer)[0]) # 최종 Latex
+    pred = post_process(token2str(dec, tokenizer)[0])  # 최종 Latex
     return pred
- 
