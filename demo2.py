@@ -104,50 +104,47 @@ if __name__ == '__main__':
                     st.session_state.predict_latex = prediction
                     # data = st.text_input("수식 수정:",st.session_state.predict_latex)
 
-            text_col, copy_col = st.columns([4, 1])
-
             # 수식이 세션에 저장되어있다면 표시
             if "predict_latex" in st.session_state:
 
                 if 'latex_input_text' in st.session_state:
-                    data = text_col.text_input("수식 수정:1",
-                                           st.session_state.latex_input_text, 
-                                           key='latex_input_text',
-                                           label_visibility="collapsed")
+                    latex_input_text_str = st.session_state.latex_input_text
                 else:
-                    data = text_col.text_input("수식 수정:2",
-                                           st.session_state.predict_latex, 
-                                           key='latex_input_text',
-                                           label_visibility="collapsed")
+                    latex_input_text_str = st.session_state.predict_latex
 
-                print('수정중_', data, st.session_state)
-                st.session_state.predict_latex = data
-                st.latex(st.session_state.predict_latex)
-
-                # st.code(st.session_state.predict_latex, language="cmd")
+                st.latex(latex_input_text_str)
+                text_col, copy_col = st.columns([4, 1])
+                st.session_state.predict_latex = text_col.text_input("수식 수정:", latex_input_text_str, key='latex_input_text',
+                                                                 label_visibility="collapsed")
+                print('수정중_', st.session_state.latex_input_text)
 
                 if copy_col.button("복사", key='clipboard_btn'):
                     # 클립보드에 텍스트 복사
                     pyperclip.copy(st.session_state.predict_latex)
-                    toast_msg = st.success("텍스트가 클립보드에 복사되었습니다.")
+                    toast_msg = st.toast("수식 복사 완료!", icon="✂")
                     del st.session_state.clipboard_btn
                     time.sleep(2)
                     toast_msg.empty()
+                
+                with st.expander("내보내기"):
+                    # 울프람알파 내보내기
+                    encoded_prediction = quote(st.session_state.predict_latex)  # URL 또는 다른 web에 보내기위한 인코딩
+                    wolfram_url = f"https://www.wolframalpha.com/input/?i={encoded_prediction}"
+                    button_code = f"""
+                    <a href="{wolfram_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">WolframAlpha</a>
+                    """
+                    st.markdown(button_code, unsafe_allow_html=True)
 
+                    # 이미지 저장
+                    latex_image = latex_to_image(st.session_state.predict_latex)
+                    latex_image_bytes = latex_image.getvalue()
 
-                # # 예측 결과를 표시
-                # if data:
-                #     st.latex(data)
-                #     st.code(data, language="cmd")
-                #
-                # with st.expander("내보내기"):
-                #     # 울프람알파 내보내기
-                #     encoded_prediction = quote(st.session_state.predict_latex)  # URL 또는 다른 web에 보내기위한 인코딩
-                #     wolfram_url = f"https://www.wolframalpha.com/input/?i={encoded_prediction}"
-                #     button_code = f"""
-                #     <a href="{wolfram_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">WolframAlpha</a>
-                #     """
-                #     st.markdown(button_code, unsafe_allow_html=True)
+                    st.download_button(
+                        label="다운로드",
+                        data=latex_image_bytes,
+                        file_name="latex_image.png",
+                        mime="image/png"
+                    )
 
     except KeyboardInterrupt:
         print('Ctrl + C 중지 메시지 출력')
