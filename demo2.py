@@ -48,10 +48,6 @@ if __name__ == '__main__':
     try:
 
         st.title("수식 변환기📸")
-
-        # a = DemoOption()
-        # b = DemoOption()
-        print(st.session_state)
         # 모델 초기화
 
         model = Pix2TexModel()
@@ -115,13 +111,17 @@ if __name__ == '__main__':
             if "predict_latex" in st.session_state:
 
                 if 'latex_input_text' in st.session_state:
-                    data = col1.text_input("수식 수정:", st.session_state.latex_input_text, key='latex_input_text',
-                                           label_visibility="hidden")
+                    data = col1.text_input("수식 수정:1",
+                                           st.session_state.latex_input_text, 
+                                           key='latex_input_text',
+                                           label_visibility="collapsed")
                 else:
-                    data = col1.text_input("수식 수정:", st.session_state.predict_latex, key='latex_input_text',
-                                           label_visibility="hidden")
+                    data = col1.text_input("수식 수정:2",
+                                           st.session_state.predict_latex, 
+                                           key='latex_input_text',
+                                           label_visibility="collapsed")
 
-                print('수정중_', data, st.session_state.latex_input_text)
+                print('수정중_', data, st.session_state)
                 st.session_state.predict_latex = data
                 st.latex(st.session_state.predict_latex)
 

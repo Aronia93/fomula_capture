@@ -20,7 +20,7 @@ class Pix2TexModel:
             print('newCall')
         return cls._instance
 
-    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca4_e45_b855_t_685_ed131.pth',
+    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca2_e118_b864_t661_ed128.pth',
                  temperature=.333):
 
         if not self._is_init:
