@@ -66,7 +66,7 @@ if __name__ == '__main__':
             # 이미지 크롭
             cropped_img = st_cropper(img_file=img, realtime_update=True, box_color="green")
 
-            col1, col2 = st.columns([10, 1])
+            # col1, col2 = st.columns([10, 1])
 
             # 전체 이미지 사용 토글
             use_full = st.toggle("전체 이미지 사용")
@@ -104,19 +104,18 @@ if __name__ == '__main__':
                     st.session_state.predict_latex = prediction
                     # data = st.text_input("수식 수정:",st.session_state.predict_latex)
 
-            col1, col2 = st.columns([4, 1])
-            # with col1:
+            text_col, copy_col = st.columns([4, 1])
 
             # 수식이 세션에 저장되어있다면 표시
             if "predict_latex" in st.session_state:
 
                 if 'latex_input_text' in st.session_state:
-                    data = col1.text_input("수식 수정:1",
+                    data = text_col.text_input("수식 수정:1",
                                            st.session_state.latex_input_text, 
                                            key='latex_input_text',
                                            label_visibility="collapsed")
                 else:
-                    data = col1.text_input("수식 수정:2",
+                    data = text_col.text_input("수식 수정:2",
                                            st.session_state.predict_latex, 
                                            key='latex_input_text',
                                            label_visibility="collapsed")
@@ -127,7 +126,7 @@ if __name__ == '__main__':
 
                 # st.code(st.session_state.predict_latex, language="cmd")
 
-                if col2.button("복사", key='clipboard_btn'):
+                if copy_col.button("복사", key='clipboard_btn'):
                     # 클립보드에 텍스트 복사
                     pyperclip.copy(st.session_state.predict_latex)
                     toast_msg = st.success("텍스트가 클립보드에 복사되었습니다.")
