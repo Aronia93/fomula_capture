@@ -3,7 +3,7 @@ import time
 import streamlit as st
 from core import Pix2TexModel
 from streamlit_cropper import st_cropper
-from PIL import Image
+from PIL import Image, ExifTags
 from urllib.parse import quote
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -62,7 +62,21 @@ if __name__ == '__main__':
 
         if st.session_state.uploaded_file is not None:
             img = Image.open(uploaded_file)  # 이미지 열기
-
+            try:
+                for orientation in ExifTags.TAGS.keys():
+                    if ExifTags.TAGS[orientation] == 'Orientation':
+                        break
+                exif = dict(img._getexif().items())
+                
+                if exif[orientation] == 3:
+                    img = img.rotate(180, expand=True)
+                elif exif[orientation] == 6:
+                    img = img.rotate(270, expand=True)
+                elif exif[orientation] == 8:
+                    img = img.rotate(90, expand=True)
+            except (AttributeError, KeyError, IndexError):
+                # cases: image don't have getexif
+                pass
             # 이미지 크롭
             cropped_img = st_cropper(img_file=img, realtime_update=True, box_color="green")
 
@@ -113,7 +127,7 @@ if __name__ == '__main__':
                     latex_input_text_str = st.session_state.predict_latex
 
                 st.latex(latex_input_text_str)
-                text_col, copy_col = st.columns([4, 1])
+                text_col, copy_col = st.columns([9.7, 1])
                 st.session_state.predict_latex = text_col.text_input("수식 수정:", latex_input_text_str, key='latex_input_text',
                                                                  label_visibility="collapsed")
                 print('수정중_', st.session_state.latex_input_text)
@@ -122,9 +136,6 @@ if __name__ == '__main__':
                     # 클립보드에 텍스트 복사
                     pyperclip.copy(st.session_state.predict_latex)
                     toast_msg = st.toast("수식 복사 완료!", icon="✂")
-                    del st.session_state.clipboard_btn
-                    time.sleep(2)
-                    toast_msg.empty()
                 
                 with st.expander("내보내기"):
                     # 울프람알파 내보내기
@@ -135,16 +146,16 @@ if __name__ == '__main__':
                     """
                     st.markdown(button_code, unsafe_allow_html=True)
 
-                    # 이미지 저장
-                    latex_image = latex_to_image(st.session_state.predict_latex)
-                    latex_image_bytes = latex_image.getvalue()
+                    # # 이미지 저장
+                    # latex_image = latex_to_image(st.session_state.predict_latex)
+                    # latex_image_bytes = latex_image.getvalue()
 
-                    st.download_button(
-                        label="다운로드",
-                        data=latex_image_bytes,
-                        file_name="latex_image.png",
-                        mime="image/png"
-                    )
+                    # st.download_button(
+                    #     label="이미지 다운로드 .PNG",
+                    #     data=latex_image_bytes,
+                    #     file_name="latex_image.png",
+                    #     mime="image/png"
+                    # )
 
     except KeyboardInterrupt:
         print('Ctrl + C 중지 메시지 출력')
