@@ -1,21 +1,14 @@
+import time
+
 import streamlit as st
 from core import Pix2TexModel
 from streamlit_cropper import st_cropper
-from PIL import Image
+from PIL import Image, ExifTags
 from urllib.parse import quote
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import io
-
-st.title("수식 변환기📸")
-
-# 모델 초기화
-model = Pix2TexModel()
-
-# matplotlib의 폰트 설정 변경
-# mpl.rcParams['font.family'] = 'serif'
-# mpl.rcParams['font.serif'] = 'Computer Modern Roman'
-mpl.rcParams['text.usetex'] = False
+import pyperclip
 
 
 ## 기능 함수 ##
@@ -51,88 +44,118 @@ def clear_state():
         del st.session_state.predict_latex
 
 
-## 파일 업로드 작업 ##
-# 사용자로부터 이미지 입력
-uploaded_file = st.file_uploader("", type=["png", "jpg"], on_change=clear_state)
+if __name__ == '__main__':
+    try:
 
-if uploaded_file is not None:
-    img = Image.open(uploaded_file)  # 이미지 열기
+        st.title("수식 변환기📸")
+        # 모델 초기화
 
-    # 이미지 크롭
-    cropped_img = st_cropper(img_file=img, realtime_update=True, box_color="green")
+        model = Pix2TexModel()
 
-    col1, col2 = st.columns([10, 1])
+        # matplotlib의 폰트 설정 변경
+        # mpl.rcParams['font.family'] = 'serif'
+        # mpl.rcParams['font.serif'] = 'Computer Modern Roman'
+        mpl.rcParams['text.usetex'] = False
+        ## 파일 업로드 작업 ##
+        # 사용자로부터 이미지 입력
+        uploaded_file = st.file_uploader("", type=["png", "jpg"], key='uploaded_file', on_change=clear_state)
 
-    # 전체 이미지 사용 토글
-    use_full = st.toggle("전체 이미지 사용")
+        if st.session_state.uploaded_file is not None:
+            img = Image.open(uploaded_file)  # 이미지 열기
+            try:
+                for orientation in ExifTags.TAGS.keys():
+                    if ExifTags.TAGS[orientation] == 'Orientation':
+                        break
+                exif = dict(img._getexif().items())
+                
+                if exif[orientation] == 3:
+                    img = img.rotate(180, expand=True)
+                elif exif[orientation] == 6:
+                    img = img.rotate(270, expand=True)
+                elif exif[orientation] == 8:
+                    img = img.rotate(90, expand=True)
+            except (AttributeError, KeyError, IndexError):
+                # cases: image don't have getexif
+                pass
+            # 이미지 크롭
+            cropped_img = st_cropper(img_file=img, realtime_update=True, box_color="green")
 
-    if use_full:
-        # 전체 이미지
-        col1.image(uploaded_file, caption='최종 입력 이미지', use_column_width=True)
-        final_img = uploaded_file
-    else:
-        # 이미지 자르기
-        col1.image(cropped_img, caption='최종 입력 이미지', use_column_width=True)
-        final_img = cropped_img
+            # col1, col2 = st.columns([10, 1])
 
-    ## 예측 부분 ##
-    if st.button("수식 변환", key="Start_btn"):
-        if "predict_latex" in st.session_state:
-            del st.session_state.predict_latex
-            print(st.session_state)
-            print("초기화 완료")
-        with st.spinner("분석중....."):
+            # 전체 이미지 사용 토글
+            use_full = st.toggle("전체 이미지 사용")
             if use_full:
-                prediction = model.predict(final_img, True)
+                # 전체 이미지
+                final_img = uploaded_file
             else:
-                prediction = model.predict(final_img)
+                # 이미지 자르기
+                final_img = cropped_img
 
-            st.session_state.predict_latex = prediction
-            # data = st.text_input("수식 수정:",st.session_state.predict_latex)
+            image_container = st.container()
+            caption = "최종 입력 이미지"
+            # image_container.text(caption)
 
-    # 수식이 세션에 저장되어있다면 표시
-    if "predict_latex" in st.session_state:
+            # 캡션을 가운데 정렬하는 HTML 및 CSS 스타일 사용
+            centered_text = f'<div style="display: flex; justify-content: center;"><p style="font-size:18px;">{caption}</p></div>'
+            image_container.markdown(centered_text, unsafe_allow_html=True)
+            image_container.image(final_img, use_column_width=True)
 
-        if st.session_state.Start_btn == True:
-            data = st.text_input("수식수정 : ", placeholder=st.session_state.predict_latex, label_visibility="hidden")
-            st.latex(st.session_state.predict_latex)
-            st.code(st.session_state.predict_latex, language="cmd")
+            # 이미지와 캡션을 가로로 정렬
+            # with st.container():
+            #     st.image(final_img, use_column_width=True)
+            #     st.text(caption)
 
-        else:
-            data = st.text_input("수정:", st.session_state.predict_latex)
-            st.latex(data)
-            st.code(data, language="cmd")
 
-        with st.expander("내보내기"):
-            # 울프람알파 내보내기
-            encoded_prediction = quote(st.session_state.predict_latex)  # URL 또는 다른 web에 보내기위한 인코딩
-            wolfram_url = f"https://www.wolframalpha.com/input/?i={encoded_prediction}"
-            button_code = f"""
-            <a href="{wolfram_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">WolframAlpha</a>
-            """
-            st.markdown(button_code, unsafe_allow_html=True)
+            ## 예측 부분 ##
+            if st.button("수식 변환", key="Start_btn"):
 
-            # # 이미지 저장
-            # latex_image = latex_to_image(prediction)
-            # latex_image_bytes = latex_image.getvalue()
+                if "predict_latex" in st.session_state:
+                    del st.session_state.predict_latex
+                    del st.session_state.latex_input_text
+                with st.spinner("분석중....."):
+                    prediction = model.predict(final_img, use_full)
 
-            # st.download_button(
-            #     label="다운로드",
-            #     data=latex_image_bytes,
-            #     file_name="latex_image.png",
-            #     mime="image/png"
-            # )
+                    st.session_state.predict_latex = prediction
+                    # data = st.text_input("수식 수정:",st.session_state.predict_latex)
 
-        # codecogs_url = f"https://latex.codecogs.com/png.latex?{encoded_prediction}"
+            # 수식이 세션에 저장되어있다면 표시
+            if "predict_latex" in st.session_state:
 
-        # # 사용자에게 URL 제공
-        # button_code = f"""
-        # <a href="{codecogs_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">이미지로 변환하기</a>
-        # """
-        # st.markdown(button_code, unsafe_allow_html=True)
+                if 'latex_input_text' in st.session_state:
+                    latex_input_text_str = st.session_state.latex_input_text
+                else:
+                    latex_input_text_str = st.session_state.predict_latex
 
-# References
-# - streamlit-cropper https://github.com/turner-anderson/streamlit-cropper
+                st.latex(latex_input_text_str)
+                text_col, copy_col = st.columns([9.7, 1])
+                st.session_state.predict_latex = text_col.text_input("수식 수정:", latex_input_text_str, key='latex_input_text',
+                                                                 label_visibility="collapsed")
+                print('수정중_', st.session_state.latex_input_text)
 
-# 수정해야할 사항
-# - 한번 수식변환 누르고 두번 움직이면 다시 초기화됨 이유를 파악해서 고치면 됨
+                if copy_col.button("복사", key='clipboard_btn'):
+                    # 클립보드에 텍스트 복사
+                    pyperclip.copy(st.session_state.predict_latex)
+                    toast_msg = st.toast("수식 복사 완료!", icon="✂")
+                
+                with st.expander("내보내기"):
+                    # 울프람알파 내보내기
+                    encoded_prediction = quote(st.session_state.predict_latex)  # URL 또는 다른 web에 보내기위한 인코딩
+                    wolfram_url = f"https://www.wolframalpha.com/input/?i={encoded_prediction}"
+                    button_code = f"""
+                    <a href="{wolfram_url}" target="_blank" style="display: inline-block; text-decoration: none; background-color: #F96932; color: white; padding: 8px 16px; border-radius: 4px;">WolframAlpha</a>
+                    """
+                    st.markdown(button_code, unsafe_allow_html=True)
+
+                    # # 이미지 저장
+                    # latex_image = latex_to_image(st.session_state.predict_latex)
+                    # latex_image_bytes = latex_image.getvalue()
+
+                    # st.download_button(
+                    #     label="이미지 다운로드 .PNG",
+                    #     data=latex_image_bytes,
+                    #     file_name="latex_image.png",
+                    #     mime="image/png"
+                    # )
+
+    except KeyboardInterrupt:
+        print('Ctrl + C 중지 메시지 출력')
