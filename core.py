@@ -1,10 +1,8 @@
 import torch
 import yaml
-import cv2
-from munch import Munch
-from pix2tex.models import get_model
-from pix2tex.utils import *
-from pix2tex.dataset.transforms import test_transform
+from models import get_model
+from utils import *
+from transforms import test_transform
 from transformers import PreTrainedTokenizerFast
 import numpy as np
 
@@ -16,8 +14,6 @@ class Pix2TexModel:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(Pix2TexModel, cls).__new__(cls)
-            # 초기화 코드 추가 가능
-            print('newCall')
         return cls._instance
 
     def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca2_e118_b864_t661_ed128.pth',

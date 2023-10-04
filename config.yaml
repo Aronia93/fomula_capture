@@ -53,3 +53,4 @@ testbatchsize: 20
 tokenizer: ./tokenizer.json
 valbatches: 100
 valdata: dataset/data/val_pre_crohme_pdf_aihub_final.pkl
+is_af: False
