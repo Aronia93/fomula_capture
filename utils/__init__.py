@@ -1,1 +1,1 @@
-from pix2tex.utils.utils import *
+from utils.utils import *

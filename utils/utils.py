@@ -1,4 +1,3 @@
-import random_gacha
 import os
 import cv2
 import re

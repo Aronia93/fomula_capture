@@ -66,8 +66,4 @@ def get_model(args):
     decoder.to(args.device)
     model = Model(encoder, decoder, args)
 
-    if args.wandb:
-        import wandb
-        wandb.watch(model)
-
     return model

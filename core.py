@@ -16,8 +16,8 @@ class Pix2TexModel:
             cls._instance = super(Pix2TexModel, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, config_path='./config.yaml', checkpoint_path='./p_h_pca2_e118_b864_t661_ed128.pth',
-                 temperature=.333):
+    def __init__(self, config_path='./config.yaml', checkpoint_path='./af_h_pca5a_e56_depth6.pth', # af_h_pca5as_new_e19_step-9.pth
+                 temperature=.2):
 
         if not self._is_init:
             with open(config_path, 'r', encoding='utf-8') as f:
@@ -25,7 +25,6 @@ class Pix2TexModel:
             self.args = parse_args(Munch(params))
             self.args.temperature = temperature
             self.args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            self.args.wandb = False
 
             self._is_init = True
             self.model = get_model(self.args)
